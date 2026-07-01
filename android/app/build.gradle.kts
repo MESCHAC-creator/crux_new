@@ -32,8 +32,11 @@ android {
 
     buildTypes {
         release {
+            // Ces deux options sont obligatoires ensemble pour Codemagic
+            isMinifyEnabled = true
+            isShrinkResources = true
+            
             signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
