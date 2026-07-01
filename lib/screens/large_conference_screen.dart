@@ -301,7 +301,11 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   }
 
   Future<void> _switchCamera() async {
-    await _room?.localParticipant?.switchCamera();
+    final track = _room?.localParticipant?.videoTrackPublications.values
+        .where((pub) => pub.track is LocalVideoTrack)
+        .map((pub) => pub.track as LocalVideoTrack)
+        .firstOrNull;
+    await track?.switchCamera();
   }
 
   Future<void> _leave() async {

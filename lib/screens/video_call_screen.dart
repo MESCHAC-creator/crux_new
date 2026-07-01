@@ -8734,12 +8734,9 @@ class _VideoCallScreenState extends State<VideoCallScreen>
                 // https://crux-8aa85.web.app/join/MEETING_ID is handled by the
                 // web/public/join/index.html page which redirects to the app.
                 final joinUrl = 'https://crux-8aa85.web.app/join/${widget.meetingId}';
-                final text = 'Rejoignez ma réunion CRUX
-'
-                    'Réunion : ${_meetingTitle}
-'
-                    'ID : ${widget.meetingId}
-'
+                final text = 'Rejoignez ma réunion CRUX\n'
+                    'Réunion : ${_meetingTitle}\n'
+                    'ID : ${widget.meetingId}\n'
                     'Lien : $joinUrl';
                 await Clipboard.setData(ClipboardData(text: text));
                 if (!ctx.mounted) return;
@@ -8771,14 +8768,11 @@ class _VideoCallScreenState extends State<VideoCallScreen>
               ),
               onPressed: () {
                 final joinUrl = 'https://crux-8aa85.web.app/join/${widget.meetingId}';
-                final text = 'Rejoignez ma réunion CRUX !
-'
-                    'Réunion : ${_meetingTitle}
-'
-                    'ID : ${widget.meetingId}
-'
-                    '
-🔗 Lien direct : $joinUrl';
+                final text = 'Rejoignez ma réunion CRUX !\n'
+                    'Réunion : ${_meetingTitle}\n'
+                    'ID : ${widget.meetingId}\n'
+                    '\n'
+                    '🔗 Lien direct : $joinUrl';
                 Navigator.pop(ctx);
                 Share.share(text, subject: 'Invitation CRUX — ${_meetingTitle}');
               },
