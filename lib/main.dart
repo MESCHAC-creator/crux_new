@@ -287,6 +287,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   bool? _termsAccepted;
   late final Stream<User?> _authStream;
   String? _pendingMeetingId; // set when app is opened via a deep link
+  StreamSubscription? _sub;
 
   @override
   void initState() {
@@ -296,11 +297,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
     _initDeepLinks();
   }
 
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
   Future<void> _initDeepLinks() async {
     final appLinks = AppLinks();
 
     // App already open — stream of incoming links
-    appLinks.uriLinkStream.listen((uri) {
+    _sub = appLinks.uriLinkStream.listen((uri) {
       _handleDeepLink(uri);
     });
 

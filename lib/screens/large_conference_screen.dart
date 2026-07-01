@@ -305,7 +305,22 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
         .where((pub) => pub.track is LocalVideoTrack)
         .map((pub) => pub.track as LocalVideoTrack)
         .firstOrNull;
-    await track?.switchCamera();
+    if (track == null) return;
+
+    try {
+      final devices = await Hardware.instance.videoInputs;
+      if (devices.length < 2) return;
+
+      final currentDeviceId = track.mediaStreamTrack.getSettings()['deviceId'];
+      final nextDevice = devices.firstWhere(
+        (d) => d.deviceId != currentDeviceId,
+        orElse: () => devices.first,
+      );
+
+      await track.switchCamera(nextDevice.deviceId);
+    } catch (e) {
+      debugPrint('Error switching camera: $e');
+    }
   }
 
   Future<void> _leave() async {

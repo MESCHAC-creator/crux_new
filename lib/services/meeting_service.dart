@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:uuid/uuid.dart';
 import 'package:logger/logger.dart';
+import 'package:uuid/uuid.dart';
 import '../models/meeting_model.dart';
 
 class MeetingService {
