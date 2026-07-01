@@ -771,6 +771,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
+              // Defaulting to Large Conference for 1000+ participants
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.groups_rounded, color: Colors.greenAccent, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Capacité : 1000+ participants',
+                      style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
               GestureDetector(
                 onTap: () {
                   setSheet(() {
@@ -831,64 +846,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
-              // ── Meeting type: Standard vs Large Conference ──
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white12),
-                ),
-                child: Row(children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () { setSheet(() => _isLargeConference = false); setState(() {}); },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(vertical: 9),
-                        decoration: BoxDecoration(
-                          color: !_isLargeConference ? const Color(0xFFE53935) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(Icons.people_outline, size: 14, color: !_isLargeConference ? Colors.white : Colors.white38),
-                          const SizedBox(width: 5),
-                          Text('Standard (≤6)', style: GoogleFonts.poppins(
-                            fontSize: 11, fontWeight: FontWeight.w600,
-                            color: !_isLargeConference ? Colors.white : Colors.white38)),
-                        ]),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () { setSheet(() => _isLargeConference = true); setState(() {}); },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(vertical: 9),
-                        decoration: BoxDecoration(
-                          color: _isLargeConference ? const Color(0xFF1565C0) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(Icons.groups_outlined, size: 14, color: _isLargeConference ? Colors.white : Colors.white38),
-                          const SizedBox(width: 5),
-                          Text('Grande (1000+)', style: GoogleFonts.poppins(
-                            fontSize: 11, fontWeight: FontWeight.w600,
-                            color: _isLargeConference ? Colors.white : Colors.white38)),
-                        ]),
-                      ),
-                    ),
-                  ),
-                ]),
-              ),
-              if (_isLargeConference)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text('Powered by LiveKit — jusqu\'à 1000+ participants',
-                      style: GoogleFonts.poppins(color: Colors.blue.shade300, fontSize: 11)),
-                ),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -898,6 +855,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       : () async {
                           setSheet(() => sheetCreating = true);
                           try {
+                            // Force large conference
+                            _isLargeConference = true;
                             await _createMeeting();
                           } finally {
                             if (mounted) setSheet(() => sheetCreating = false);

@@ -17,7 +17,7 @@ class MeetingService {
     required String organizerName,
     required String organizerId,
     String? passcode,
-    bool isLargeConference = false,
+    bool isLargeConference = true,
   }) async {
     final meetingId = const Uuid().v4().replaceAll('-', '').substring(0, 12).toUpperCase();
     final now = DateTime.now();

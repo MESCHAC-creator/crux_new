@@ -15,6 +15,8 @@ class MeetingModel {
   final String? recordingUrl;
   final String? passcode; // optional 4-6 digit PIN set by host
   final bool isLargeConference; // true → LiveKit SFU (1000+ people)
+  final List<String> coHosts;
+  final int muteAllCount;
 
   MeetingModel({
     required this.id,
@@ -32,7 +34,9 @@ class MeetingModel {
     this.isLocked = false,
     this.recordingUrl,
     this.passcode,
-    this.isLargeConference = false,
+    this.isLargeConference = true,
+    this.coHosts = const [],
+    this.muteAllCount = 0,
   });
 
   Map<String, dynamic> toJson() {
@@ -53,6 +57,8 @@ class MeetingModel {
       'recordingUrl': recordingUrl,
       if (passcode != null && passcode!.isNotEmpty) 'passcode': passcode,
       'isLargeConference': isLargeConference,
+      'coHosts': coHosts,
+      'muteAllCount': muteAllCount,
     };
   }
 
@@ -73,7 +79,9 @@ class MeetingModel {
       isLocked: json['isLocked'] ?? false,
       recordingUrl: json['recordingUrl'],
       passcode: json['passcode'] as String?,
-      isLargeConference: json['isLargeConference'] as bool? ?? false,
+      isLargeConference: json['isLargeConference'] as bool? ?? true,
+      coHosts: List<String>.from(json['coHosts'] ?? []),
+      muteAllCount: json['muteAllCount'] as int? ?? 0,
     );
   }
 
