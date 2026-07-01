@@ -196,7 +196,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   }
 
   VideoTrack? _screenShareTrack(Participant p) {
-    for (final pub in p.videoTrackPublications.values) {
+    for (final pub in p.videoTrackPublications) {
       if (pub.source == TrackSource.screenShareVideo && pub.track is VideoTrack) {
         return pub.track as VideoTrack;
       }
@@ -205,7 +205,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   }
 
   VideoTrack? _cameraTrack(Participant p) {
-    for (final pub in p.videoTrackPublications.values) {
+    for (final pub in p.videoTrackPublications) {
       if (pub.source == TrackSource.camera && pub.track is VideoTrack) {
         return pub.track as VideoTrack;
       }
@@ -301,7 +301,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   }
 
   Future<void> _switchCamera() async {
-    final track = _room?.localParticipant?.videoTrackPublications.values
+    final track = _room?.localParticipant?.videoTrackPublications
         .where((pub) => pub.track is LocalVideoTrack)
         .map((pub) => pub.track as LocalVideoTrack)
         .firstOrNull;
