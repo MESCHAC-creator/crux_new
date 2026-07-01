@@ -1,0 +1,57 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    missing_required_param: error
+    missing_return: error
+    todo: ignore
+  exclude:
+    - lib/firebase_options.dart
+    - lib/generated/**
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+
+linter:
+  rules:
+    - always_declare_return_types
+    - avoid_empty_else
+    - avoid_print
+    - avoid_relative_lib_imports
+    - avoid_slow_async_io
+    - avoid_types_as_parameter_names
+    - camel_case_extensions
+    - camel_case_types
+    - cancel_subscriptions
+    - control_flow_in_finally
+    - directives_ordering
+    - empty_catches
+    - library_names
+    - library_prefixes
+    - no_duplicate_case_values
+    - package_prefixed_library_names
+    - prefer_const_constructors
+    - prefer_const_constructors_in_immutables
+    - prefer_const_declarations
+    - prefer_const_literals_to_create_immutables
+    - prefer_final_fields
+    - prefer_is_empty
+    - prefer_is_not_empty
+    - prefer_single_quotes
+    - slash_for_doc_comments
+    - test_types_in_equals
+    - throw_in_finally
+    - type_init_formals
+    - unawaited_futures
+    - unnecessary_brace_in_string_interps
+    - unnecessary_const
+    - unnecessary_getters_setters
+    - unnecessary_new
+    - unnecessary_null_aware_assignments
+    - unnecessary_null_in_if_null_operators
+    - unnecessary_overrides
+    - unnecessary_parenthesis
+    - unnecessary_statements
+    - unnecessary_this
+    - unrelated_type_equality_checks
+    - use_rethrow_when_possible
+    - valid_regexps
