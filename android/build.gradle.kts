@@ -1,14 +1,3 @@
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:7.4.2")
-        classpath("com.google.gms:google-services:4.4.0")
-    }
-}
-
 allprojects {
     repositories {
         google()
@@ -16,14 +5,14 @@ allprojects {
     }
 }
 
-rootProject.buildDir = file("../build")
+val newBuildDir: File = rootProject.layout.buildDirectory.dir("../../build").get().asFile
+rootProject.layout.buildDirectory.set(newBuildDir)
+
 subprojects {
-    project.buildDir = file("${rootProject.buildDir}/${project.name}")
-}
-subprojects {
-    project.evaluationDependsOn(":app")
+    val newSubprojectBuildDir: File = rootProject.layout.buildDirectory.dir(project.name).get().asFile
+    project.layout.buildDirectory.set(newSubprojectBuildDir)
 }
 
-tasks.register("clean", Delete::class) {
-    delete(rootProject.buildDir)
+tasks.register<Delete>("clean") {
+    delete(rootProject.layout.buildDirectory)
 }
