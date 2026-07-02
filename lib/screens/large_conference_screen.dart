@@ -61,7 +61,6 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   Room? _room;
   EventsListener<RoomEvent>? _roomListener;
 
-  // ── UI State ────────────────────────────────
   bool _micOn = true;
   bool _camOn = true;
   bool _speakerOn = true;
@@ -70,7 +69,6 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   String? _error;
   int _gridPage = 0;
 
-  // ── Panels State ────────────────────────────
   bool _showParticipants = false;
   bool _showChat = false;
   bool _showPolls = false;
@@ -82,17 +80,14 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   bool _waitingRoomOn = false;
   int _unreadMessages = 0;
 
-  // ── Subtitles State ─────────────────────────
   bool _sttListening = false;
   String _sttText = '';
   final _stt = stt.SpeechToText();
 
-  // ── LiveKit State ───────────────────────────
   List<RemoteParticipant> _remoteParticipants = [];
   RemoteParticipant? _activeScreenSharer;
   String _activeScreenSharerName = '';
 
-  // ── Data State ──────────────────────────────
   bool _isCoHost = false;
   bool _isLocked = false;
   int _lastMuteAllCount = 0;
@@ -105,7 +100,6 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   ColorFilter _activeFilter = const ColorFilter.mode(Colors.transparent, BlendMode.multiply);
   String _filterName = 'Normal';
 
-  // ── Subscriptions ───────────────────────────
   StreamSubscription? _meetingDocSub;
   StreamSubscription? _kickSub;
   StreamSubscription? _chatSub;
@@ -157,8 +151,6 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     _room?.dispose();
     super.dispose();
   }
-
-  // ── INITIALIZATION ──────────────────────────
 
   Future<void> _init() async {
     await [
@@ -221,8 +213,6 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
       if (mounted) setState(() => _error = 'Connexion LiveKit échouée: $e');
     }
   }
-
-  // ── LISTENERS ───────────────────────────────
 
   void _listenMeetingDoc() {
     _meetingDocSub = _db.collection('meetings').doc(widget.meetingId).snapshots().listen((snap) {
@@ -332,8 +322,6 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
       }
     });
   }
-
-  // ── ACTIONS ─────────────────────────────────
 
   Future<void> _toggleSTT() async {
     if (_sttListening) {
@@ -504,8 +492,6 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     });
   }
 
-  // ── UI BUILDERS ──────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     if (_isWaiting) return _buildWaitingRoomParticipant();
@@ -534,7 +520,6 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
         )),
         _buildHeader(),
         _buildBottomControls(),
-
         if (_sttText.isNotEmpty)
           Positioned(
             bottom: 120, left: 20, right: 20,
@@ -544,7 +529,6 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
               child: Text(_sttText, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
             ),
           ),
-
         if (_showParticipants) _buildParticipantsPanel(),
         if (_showChat) _buildChatPanel(),
         if (_showPolls) _buildPollsPanel(),
@@ -581,4 +565,13 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
 
   Widget _buildBottomControls() {
     return Positioned(
-      bottom:
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Colors.black87, Colors.transparent])),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildControlButton(icon: _micOn ? Icons.mic : Icons.mic_off, onPressed: _toggleMic, active
