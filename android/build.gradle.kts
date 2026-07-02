@@ -1,3 +1,6 @@
+import androidx.compose.foundation.text2.input.delete
+import androidx.compose.ui.layout.layout
+
 allprojects {
     repositories {
         google()
@@ -5,10 +8,12 @@ allprojects {
     }
 }
 
-// Variables pour la compatibilité des plugins
-rootProject.extra.set("compileSdkVersion", 34)
-rootProject.extra.set("minSdkVersion", 21)
-rootProject.extra.set("targetSdkVersion", 34)
+// Ces propriétés seront lues par les plugins comme app_links
+subprojects {
+    project.extra.set("compileSdkVersion", 34)
+    project.extra.set("minSdkVersion", 21)
+    project.extra.set("targetSdkVersion", 34)
+}
 
 rootProject.layout.buildDirectory.set(rootProject.layout.projectDirectory.dir("../build"))
 
