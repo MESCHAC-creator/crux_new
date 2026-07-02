@@ -9,3 +9,9 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Fichiers de configuration locale à ne jamais envoyer
+android/local.properties
+android/.flutter-plugins
+android/.flutter-plugins-dependencies
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
