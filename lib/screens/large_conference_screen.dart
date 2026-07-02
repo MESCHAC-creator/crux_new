@@ -196,7 +196,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
           }
         });
 
-      await room.connect(AppConfig.livekitUrl, token);
+await room.connect(AppConfig.livekitUrl, token);
       _room = room;
       await room.localParticipant?.setCameraEnabled(_camOn);
       await room.localParticipant?.setMicrophoneEnabled(_micOn);
@@ -574,4 +574,66 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildControlButton(icon: _micOn ? Icons.mic : Icons.mic_off, onPressed: _toggleMic, active
+            _buildControlButton(icon: _micOn ? Icons.mic : Icons.mic_off, onPressed: _toggleMic, active: _micOn),
+            _buildControlButton(icon: _camOn ? Icons.videocam : Icons.videocam_off, onPressed: _toggleCam, active: _camOn),
+            _buildControlButton(icon: Icons.screen_share, onPressed: () => _toggleScreenShare(), active: _screenShareOn),
+            _buildControlButton(icon: Icons.chat_bubble_outline, onPressed: () => setState(() => _showChat = !_showChat), active: _showChat, badge: _unreadMessages),
+            _buildControlButton(icon: Icons.poll, onPressed: () => setState(() => _showPolls = !_showPolls), active: _showPolls),
+            _buildControlButton(icon: Icons.people_outline, onPressed: () => setState(() => _showParticipants = !_showParticipants), active: _showParticipants),
+            _buildControlButton(icon: Icons.call_end, onPressed: _leave, bgColor: Colors.red),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    bool active = false,
+    Color bgColor = Colors.white24,
+    int badge = 0,
+  }) {
+    return Stack(
+      children: [
+        MaterialButton(
+          onPressed: onPressed,
+          color: active ? Colors.blue : bgColor,
+          minWidth: 40,
+          height: 40,
+          shape: const CircleBorder(),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+        if (badge > 0)
+          Positioned(
+            top: 0, right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+              child: Text('$badge', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildVideoGrid() => Positioned.fill(child: Container(color: Colors.black));
+
+  Widget _buildLoading() => const Center(child: CircularProgressIndicator());
+
+  Widget _buildErrorScreen() => Center(child: Text(_error ?? 'Erreur', style: const TextStyle(color: Colors.white)));
+
+  Widget _buildWaitingRoomParticipant() => Scaffold(backgroundColor: Colors.black, body: const Center(child: Text('En attente d\'admission...', style: TextStyle(color: Colors.white))));
+
+  Widget _buildParticipantsPanel() => Positioned.fill(child: Container(color: Colors.black87));
+
+  Widget _buildChatPanel() => Positioned.fill(child: Container(color: Colors.black87));
+
+  Widget _buildPollsPanel() => Positioned.fill(child: Container(color: Colors.black87));
+
+  Widget _buildWhiteboardPanel() => Positioned.fill(child: Container(color: Colors.black87));
+
+  Widget _buildEmojiBar() => Positioned.fill(child: Container(color: Colors.black87));
+
+  Widget _buildFiltersPanel() => Positioned.fill(child: Container(color: Colors.black87));
+}
