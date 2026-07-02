@@ -20,3 +20,17 @@ plugins {
 }
 
 include(":app")
+
+val localPropertiesFile = File(rootProject.projectDir, "local.properties")
+val properties = java.util.Properties()
+
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.reader(Charsets.UTF_8).use { reader ->
+        properties.load(reader)
+    }
+}
+
+val flutterSdkPath = properties.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT") ?: System.getenv("FLUTTER_SDK")
+    ?: throw GradleException("flutter.sdk not set in local.properties")
+
+apply(from = "$flutterSdkPath/packages/flutter_tools/gradle/app_plugin_loader.gradle")
