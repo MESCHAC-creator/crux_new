@@ -32,10 +32,8 @@ android {
 
     buildTypes {
         release {
-            // Ces deux options sont obligatoires ensemble pour Codemagic
             isMinifyEnabled = true
             isShrinkResources = true
-            
             signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -53,4 +51,8 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
+    
+    implementation("com.google.firebase:firebase-auth:22.3.0")
+    implementation("com.google.firebase:firebase-firestore:24.9.1")
+    implementation("com.google.firebase:firebase-messaging:23.4.0")
 }
