@@ -10,6 +10,7 @@ import 'package:livekit_client/livekit_client.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../config/app_config.dart';
 import '../services/livekit_service.dart';
@@ -18,8 +19,6 @@ import '../models/meeting_model.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_translations.dart';
 import '../theme/colors.dart';
-
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class _Reaction {
   final String emoji;
@@ -83,7 +82,12 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   bool _waitingRoomOn = false;
   int _unreadMessages = 0;
 
-  // ── LiveKit / WebRTC State ──────────────────
+  // ── Subtitles State ─────────────────────────
+  bool _sttListening = false;
+  String _sttText = '';
+  final _stt = stt.SpeechToText();
+
+  // ── LiveKit State ───────────────────────────
   List<RemoteParticipant> _remoteParticipants = [];
   RemoteParticipant? _activeScreenSharer;
   String _activeScreenSharerName = '';
@@ -98,18 +102,10 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   List<List<Offset>> _strokes = [];
   List<Offset> _currentStroke = [];
   final List<_Reaction> _reactions = [];
-  bool _sttListening = false;
-  String _sttText = '';
-  final _stt = stt.SpeechToText();
   ColorFilter _activeFilter = const ColorFilter.mode(Colors.transparent, BlendMode.multiply);
   String _filterName = 'Normal';
 
-  // ── Controllers & Subscriptions ─────────────
-  final _chatController = TextEditingController();
-  final _chatScrollController = ScrollController();
-  final _pollQuestionController = TextEditingController();
-  final List<TextEditingController> _pollOptionControllers = [TextEditingController(), TextEditingController()];
-  
+  // ── Subscriptions ───────────────────────────
   StreamSubscription? _meetingDocSub;
   StreamSubscription? _kickSub;
   StreamSubscription? _chatSub;
@@ -121,6 +117,10 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
 
   final _db = FirebaseFirestore.instance;
   final _meetingService = MeetingService();
+  final _chatController = TextEditingController();
+  final _chatScrollController = ScrollController();
+  final _pollQuestionController = TextEditingController();
+  final List<TextEditingController> _pollOptionControllers = [TextEditingController(), TextEditingController()];
 
   @override
   void initState() {
@@ -252,6 +252,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
           if (!widget.isHost && !_isCoHost) {
             _room?.localParticipant?.setMicrophoneEnabled(false);
             setState(() => _micOn = false);
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('L\'hôte a coupé tous les micros')));
           }
         }
       }
@@ -332,6 +333,8 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     });
   }
 
+  // ── ACTIONS ─────────────────────────────────
+
   Future<void> _toggleSTT() async {
     if (_sttListening) {
       _stt.stop();
@@ -341,18 +344,18 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
       if (avail) {
         setState(() => _sttListening = true);
         _stt.listen(onResult: (res) {
-          setState(() { _sttText = res.recognizedWords; });
-          if (res.finalResult) {
-            Future.delayed(const Duration(seconds: 3), () {
-              if (mounted && _sttText == res.recognizedWords) setState(() => _sttText = '');
-            });
+          if (mounted) {
+            setState(() { _sttText = res.recognizedWords; });
+            if (res.finalResult) {
+              Future.delayed(const Duration(seconds: 3), () {
+                if (mounted && _sttText == res.recognizedWords) setState(() => _sttText = '');
+              });
+            }
           }
         });
       }
     }
   }
-
-  // ── ACTIONS ─────────────────────────────────
 
   Future<void> _toggleHand() async {
     _handRaised = !_handRaised;
@@ -532,7 +535,6 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
         _buildHeader(),
         _buildBottomControls(),
         
-        // Subtitles
         if (_sttText.isNotEmpty)
           Positioned(
             bottom: 120, left: 20, right: 20,
@@ -884,6 +886,11 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   Widget _buildScreenShareLayout() {
     final sharer = _activeScreenSharer; final local = _room?.localParticipant; VideoTrack? main = _screenShareOn && local != null ? _screenShareTrack(local) : (sharer != null ? _screenShareTrack(sharer) : null);
     return Stack(children: [Positioned.fill(child: main != null ? VideoTrackRenderer(main) : _buildAvatar(_activeScreenSharerName)), if (main != null) Positioned(top: 72, left: 12, right: 12, child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)), child: Row(children: [const Icon(Icons.screen_share, color: Colors.white, size: 16), const SizedBox(width: 8), Text(_screenShareOn ? 'Vous partagez votre écran' : '$_activeScreenSharerName partage son écran', style: const TextStyle(color: Colors.white, fontSize: 12))]))), if (local != null) Positioned(top: 120, right: 12, width: 100, height: 140, child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildParticipantTile(local, isLocal: true)))]);
+  }
+
+  Widget _buildAvatar(String name, {int seed = 0}) {
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    return Container(color: const Color(0xFF1A1529), child: Center(child: Container(width: 72, height: 72, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.primary), child: Center(child: Text(initial, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold))))));
   }
 
   Widget _buildWaitingRoomParticipant() {

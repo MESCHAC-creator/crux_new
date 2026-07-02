@@ -27,8 +27,6 @@ import 'theme/colors.dart';
 // Utils & Screens
 import 'utils/localization_utils.dart';
 import 'screens/auth_wrapper.dart';
-import 'models/user_model.dart';
-import 'screens/splash_screen.dart';
 
 final logger = Logger();
 
@@ -144,16 +142,12 @@ class _FirebaseErrorApp extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'La connexion au serveur a échoué.\nVérifiez votre connexion et relancez l\'app.',
+                  'La connexion au serveur a échoué.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.6),
                 ),
                 const SizedBox(height: 24),
-                Text(
-                  error,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white30, fontSize: 11),
-                ),
+                Text(error, style: const TextStyle(color: Colors.white30, fontSize: 11)),
               ],
             ),
           ),
@@ -186,18 +180,10 @@ class _DeviceBlockedApp extends StatelessWidget {
                 const SizedBox(height: 24),
                 const Text(
                   'Appareil non compatible',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  reason,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.6),
-                ),
+                Text(reason, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.6)),
               ],
             ),
           ),
