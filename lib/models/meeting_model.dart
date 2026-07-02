@@ -17,6 +17,7 @@ class MeetingModel {
   final bool isLargeConference; // true → LiveKit SFU (1000+ people)
   final List<String> coHosts;
   final int muteAllCount;
+  final bool waitingRoomEnabled;
 
   MeetingModel({
     required this.id,
@@ -37,6 +38,7 @@ class MeetingModel {
     this.isLargeConference = true,
     this.coHosts = const [],
     this.muteAllCount = 0,
+    this.waitingRoomEnabled = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -59,6 +61,7 @@ class MeetingModel {
       'isLargeConference': isLargeConference,
       'coHosts': coHosts,
       'muteAllCount': muteAllCount,
+      'waitingRoomEnabled': waitingRoomEnabled,
     };
   }
 
@@ -82,6 +85,7 @@ class MeetingModel {
       isLargeConference: json['isLargeConference'] as bool? ?? true,
       coHosts: List<String>.from(json['coHosts'] ?? []),
       muteAllCount: json['muteAllCount'] as int? ?? 0,
+      waitingRoomEnabled: json['waitingRoomEnabled'] as bool? ?? false,
     );
   }
 
