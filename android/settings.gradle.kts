@@ -15,10 +15,10 @@ pluginManagement {
 }
 
 plugins {
-    id("dev.flutter.flutter-gradle-plugin") version "1.0.0" apply false
+    id("dev.flutter.flutter-gradle-plugin") version "1.0.0" // ✅ Activé ici pour charger automatiquement tes plugins Flutter
     id("com.android.application") version "8.2.2" apply false
     id("org.jetbrains.kotlin.android") version "1.9.24" apply false
-    id("com.google.gms.google-services") version "4.4.1" apply false // 👈 Ajouté ici pour Firebase
+    id("com.google.gms.google-services") version "4.4.1" apply false
 }
 
 include(":app")
