@@ -14,7 +14,7 @@ pluginManagement {
 }
 
 plugins {
-    id("dev.flutter.flutter-plugin-loader") version "1.0.0"
+    id("dev.flutter.flutter-plugin-loader") version "1.0.0" // INDISPENSABLE : Répare l'erreur "package does not exist"
     id("dev.flutter.flutter-gradle-plugin") apply false
     id("com.android.application") version "8.7.0" apply false
     id("org.jetbrains.kotlin.android") version "1.9.22" apply false
@@ -23,13 +23,11 @@ plugins {
 
 include(":app")
 
-// Déclaration correcte des variables globales demandées par les dépendances (ex: app_links)
-// Elles doivent être attachées directement au rootProject
+// Définition globale requise pour le plugin app_links
 rootProject.extra.set("compileSdkVersion", 35)
 rootProject.extra.set("minSdkVersion", 24)
 rootProject.extra.set("targetSdkVersion", 34)
 
-// Configuration globale pour tous les dépôts des projets
 gradle.lifecycle.beforeProject {
     repositories {
         google()
