@@ -7,7 +7,7 @@ workflows:
     instance_type: linux
     max_build_duration: 120
     environment:
-      flutter: 3.24.5
+  flutter: stable
       java: 21
       groups:
         - firebase_deploy
