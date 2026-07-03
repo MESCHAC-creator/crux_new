@@ -33,8 +33,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -50,7 +50,20 @@ flutter {
 
 dependencies {
     implementation("androidx.multidex:multidex:2.0.1")
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.core:core-ktx:1.10.1")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.9.0")
+
+    // Manual plugin dependency injection (fallback)
+    val flutterProjectRoot = rootProject.projectDir.parentFile
+    val pluginsFile = File(flutterProjectRoot, ".flutter-plugins")
+    if (pluginsFile.exists()) {
+        pluginsFile.readLines().forEach { line ->
+            val parts = line.split("=")
+            if (parts.size == 2) {
+                val pluginName = parts[0]
+                implementation(project(":$pluginName"))
+            }
+        }
+    }
 }
