@@ -5,17 +5,22 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Récupération des propriétés du projet racine
+val rootCompileSdk = rootProject.extra.get("compileSdkVersion") as Int
+val rootMinSdk = rootProject.extra.get("minSdkVersion") as Int
+val rootTargetSdk = rootProject.extra.get("targetSdkVersion") as Int
+
 android {
     namespace = "com.example.crux"
-    compileSdk = 35
+    compileSdk = rootCompileSdk
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "21"
+        jvmTarget = "17"
     }
 
     sourceSets {
@@ -24,8 +29,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.crux"
-        minSdk = flutter.minSdkVersion
-        targetSdk = 34
+        minSdk = rootMinSdk
+        targetSdk = rootTargetSdk
         versionCode = 1
         versionName = "1.0"
         multiDexEnabled = true
