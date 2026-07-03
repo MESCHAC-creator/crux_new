@@ -472,7 +472,6 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
         .map((pub) => pub.track as LocalVideoTrack).firstOrNull;
     if (track == null) return;
     try {
-      // Correct API call for video inputs
       final devices = await Hardware.instance.enumerateDevices(type: 'videoinput');
       if (devices.length < 2) return;
       final currentDeviceId = track.mediaStreamTrack.getSettings()['deviceId'];
@@ -803,7 +802,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
         const Spacer(),
         IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => setState(() => _showPolls = false)),
       ])),
-      if (isPrivileged) Padding(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), child: ElevatedButton.icon(onPressed: _showCreatePollDialog, icon: const Icon(Icons.add), label: const Text('Créer un sondage'), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, minimumSize: const Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))))),
+      if (isPrivileged) Padding(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15), child: ElevatedButton.icon(onPressed: _showCreatePollDialog, icon: const Icon(Icons.add), label: const Text('Créer un sondage'), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, minimumSize: const Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))))),
       Expanded(child: _activePolls.isEmpty ? Center(child: Text('Aucun sondage actif', style: GoogleFonts.poppins(color: Colors.white38))) : ListView.builder(padding: const EdgeInsets.symmetric(horizontal: 20), itemCount: _activePolls.length, itemBuilder: (ctx, i) => _buildPollItem(_activePolls[i]))),
     ])));
   }
@@ -881,32 +880,24 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     return Positioned(bottom: 100, left: 20, right: 20, child: Container(height: 60, decoration: BoxDecoration(color: const Color(0xFF1A1A2E).withOpacity(0.9), borderRadius: BorderRadius.circular(15)), child: ListView.builder(scrollDirection: Axis.horizontal, itemCount: filters.length, itemBuilder: (ctx, i) => GestureDetector(onTap: () => setState(() { _activeFilter = filters[i]['filter'] as ColorFilter; _filterName = filters[i]['name'] as String; _showFilters = false; }), child: Container(margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10), padding: const EdgeInsets.symmetric(horizontal: 15), decoration: BoxDecoration(color: _filterName == filters[i]['name'] ? AppColors.primary : Colors.white10, borderRadius: BorderRadius.circular(10)), alignment: Alignment.center, child: Text(filters[i]['name'] as String, style: const TextStyle(color: Colors.white, fontSize: 12)))))));
   }
 
-  void _generateAISummary() async {
-    final chatSnap = await _db.collection('meetings').doc(widget.meetingId).collection('chat').get();
-    final messages = chatSnap.docs.map((d) => d.data()['message'] as String? ?? '').where((m) => m.isNotEmpty).toList();
-    if (mounted) {
-      showDialog(context: context, builder: (ctx) => AlertDialog(backgroundColor: const Color(0xFF1A1A2E), title: const Row(children: [Icon(Icons.auto_awesome, color: Colors.purpleAccent), SizedBox(width: 10), Text('Résumé IA Crux', style: TextStyle(color: Colors.white))]), content: Text(messages.isEmpty ? 'Pas assez de messages.' : 'Points clés : ${messages.length} messages analysés.\nParticipants : ${_presenceList.length}.\nConclusion : Réunion productive.', style: const TextStyle(color: Colors.white70)), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fermer'))]));
-    }
-  }
-
   // ── GRID BUILDERS ───────────────────────────
 
   Widget _buildVideoGrid() {
     if (_activeScreenSharer != null || _screenShareOn) return _buildScreenShareLayout();
     
-    // Spotlight logic
+    final local = _room?.localParticipant;
     if (_spotlightUserId != null) {
-      final p = [if (_room?.localParticipant != null) _room!.localParticipant!, ..._remoteParticipants].firstWhere((p) => p.identity == _spotlightUserId, orElse: () => _room!.localParticipant!);
-      return Positioned.fill(child: _buildParticipantTile(p as Participant, isLocal: p is LocalParticipant));
+      final List<Participant> allParticipants = [if (local != null) local, ..._remoteParticipants];
+      final spotlightParticipant = allParticipants.firstWhere((p) => p.identity == _spotlightUserId, orElse: () => local!);
+      return Positioned.fill(child: _buildParticipantTile(spotlightParticipant, isLocal: spotlightParticipant is LocalParticipant));
     }
 
-    final local = _room?.localParticipant;
     final total = 1 + _remoteParticipants.length;
     if (total == 1 && local != null) return Positioned.fill(child: _buildParticipantTile(local as Participant, isLocal: true));
     if (total == 2 && local != null) return Stack(children: [Positioned.fill(child: _buildParticipantTile(_remoteParticipants.first as Participant)), Positioned(top: 80, right: 12, width: 100, height: 140, child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildParticipantTile(local as Participant, isLocal: true)))]);
     
     final cap = AppConfig.livekitVisibleTileCap;
-    final List<Participant> all = [if (local != null) local as Participant, ..._remoteParticipants.map((e) => e as Participant)];
+    final all = <Participant>[if (local != null) local as Participant, ..._remoteParticipants.map((e) => e as Participant)];
     final start = _gridPage * cap; final end = (start + cap).clamp(0, all.length);
     final pageItems = all.sublist(start, end);
     return Positioned.fill(
