@@ -2,8 +2,10 @@ name: crux
 description: "CRUX - Premium Video Conferencing App"
 publish_to: 'none'
 version: 1.0.0+1
+
 environment:
   sdk: '>=3.5.0 <4.0.0'
+
 dependencies:
   flutter:
     sdk: flutter
@@ -37,17 +39,19 @@ dependencies:
   intl: ^0.19.0
   flutter_animate: ^4.5.0
   timezone: ^0.9.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.2
   flutter_launcher_icons: ^0.13.1
+
 flutter_launcher_icons:
   android: true
-  ios: false          # ⬅️ ajoute cette ligne
+  ios: false
   image_path: "assets/icon/icon.png"
-  # ... reste de ta config existante
   min_sdk_android: 24
+
 flutter:
   uses-material-design: true
   assets:
