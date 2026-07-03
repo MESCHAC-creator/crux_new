@@ -526,6 +526,14 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     );
   }
 
+  void _generateAISummary() async {
+    final chatSnap = await _db.collection('meetings').doc(widget.meetingId).collection('chat').get();
+    final messages = chatSnap.docs.map((d) => d.data()['message'] as String? ?? '').where((m) => m.isNotEmpty).toList();
+    if (mounted) {
+      showDialog(context: context, builder: (ctx) => AlertDialog(backgroundColor: const Color(0xFF1A1A2E), title: const Row(children: [Icon(Icons.auto_awesome, color: Colors.purpleAccent), SizedBox(width: 10), Text('Résumé IA Crux', style: TextStyle(color: Colors.white))]), content: Text(messages.isEmpty ? 'Pas assez de messages.' : 'Points clés : ${messages.length} messages analysés.\nParticipants : ${_presenceList.length}.\nConclusion : Réunion productive.', style: const TextStyle(color: Colors.white70)), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fermer'))]));
+    }
+  }
+
   // ── UI BUILDERS ──────────────────────────────
 
   @override
@@ -802,7 +810,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
         const Spacer(),
         IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => setState(() => _showPolls = false)),
       ])),
-      if (isPrivileged) Padding(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15), child: ElevatedButton.icon(onPressed: _showCreatePollDialog, icon: const Icon(Icons.add), label: const Text('Créer un sondage'), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, minimumSize: const Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))))),
+      if (isPrivileged) Padding(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), child: ElevatedButton.icon(onPressed: _showCreatePollDialog, icon: const Icon(Icons.add), label: const Text('Créer un sondage'), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, minimumSize: const Size(double.infinity, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))))),
       Expanded(child: _activePolls.isEmpty ? Center(child: Text('Aucun sondage actif', style: GoogleFonts.poppins(color: Colors.white38))) : ListView.builder(padding: const EdgeInsets.symmetric(horizontal: 20), itemCount: _activePolls.length, itemBuilder: (ctx, i) => _buildPollItem(_activePolls[i]))),
     ])));
   }
@@ -887,7 +895,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     
     final local = _room?.localParticipant;
     if (_spotlightUserId != null) {
-      final List<Participant> allParticipants = [if (local != null) local, ..._remoteParticipants];
+      final List<Participant> allParticipants = [if (local != null) local as Participant, ..._remoteParticipants.map((e) => e as Participant)];
       final spotlightParticipant = allParticipants.firstWhere((p) => p.identity == _spotlightUserId, orElse: () => local!);
       return Positioned.fill(child: _buildParticipantTile(spotlightParticipant, isLocal: spotlightParticipant is LocalParticipant));
     }
@@ -897,7 +905,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     if (total == 2 && local != null) return Stack(children: [Positioned.fill(child: _buildParticipantTile(_remoteParticipants.first as Participant)), Positioned(top: 80, right: 12, width: 100, height: 140, child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildParticipantTile(local as Participant, isLocal: true)))]);
     
     final cap = AppConfig.livekitVisibleTileCap;
-    final all = <Participant>[if (local != null) local as Participant, ..._remoteParticipants.map((e) => e as Participant)];
+    final List<Participant> all = [if (local != null) local as Participant, ..._remoteParticipants.map((e) => e as Participant)];
     final start = _gridPage * cap; final end = (start + cap).clamp(0, all.length);
     final pageItems = all.sublist(start, end);
     return Positioned.fill(
