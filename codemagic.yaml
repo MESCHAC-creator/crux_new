@@ -35,7 +35,7 @@ workflows:
           set -e
           flutter clean
           flutter pub cache clean
-          flutter pub get --verbose
+          flutter pub get
           echo "✅ Flutter packages updated"
 
       - name: Pre-compile plugin dependencies
