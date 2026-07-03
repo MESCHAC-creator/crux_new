@@ -70,7 +70,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   String? _error;
   int _gridPage = 0;
 
-  // ── Panels State ────────────────────────────
+  // ── Pro Features State ──────────────────────
   bool _showParticipants = false;
   bool _showChat = false;
   bool _showPolls = false;
@@ -82,6 +82,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   bool _waitingRoomOn = false;
   int _unreadMessages = 0;
   bool _dataSaverOn = false;
+  String? _spotlightUserId;
 
   // ── Subtitles State ─────────────────────────
   bool _sttListening = false;
@@ -182,11 +183,11 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
 
     try {
       final room = Room(
-        roomOptions: RoomOptions(
+        roomOptions: const RoomOptions(
           adaptiveStream: true,
           dynacast: true,
-          defaultVideoPublishOptions: const VideoPublishOptions(simulcast: true),
-          defaultAudioPublishOptions: const AudioPublishOptions(dtx: true),
+          defaultVideoPublishOptions: VideoPublishOptions(simulcast: true),
+          defaultAudioPublishOptions: AudioPublishOptions(dtx: true),
         ),
       );
 
@@ -236,12 +237,14 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
       final locked = data['isLocked'] as bool? ?? false;
       final muteCount = data['muteAllCount'] as int? ?? 0;
       final waitOn = data['waitingRoomEnabled'] as bool? ?? false;
+      final spotlight = data['spotlightUserId'] as String?;
 
       if (mounted) {
         setState(() {
           _isCoHost = coHosts.contains(widget.userId);
           _isLocked = locked;
           _waitingRoomOn = waitOn;
+          _spotlightUserId = spotlight;
         });
 
         if (waitOn && !widget.isHost && !_isCoHost && _room == null && !_isWaiting) {
@@ -507,9 +510,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
 
   Future<void> _toggleDataSaver() async {
     _dataSaverOn = !_dataSaverOn;
-    if (_room != null) {
-      // Logic for reducing quality to save data
-      // For now we simulate it by notifying the user
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_dataSaverOn ? 'Mode économie activé' : 'Mode économie désactivé'))
       );
@@ -656,6 +657,8 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     );
   }
 
+  // ── PANELS ──────────────────────────────────
+
   Widget _buildParticipantsPanel() {
     final isPrivileged = widget.isHost || _isCoHost;
     final total = 1 + _remoteParticipants.length;
@@ -739,6 +742,10 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
         }),
         ListTile(leading: const Icon(Icons.person_remove, color: Colors.red), title: const Text('Retirer de la réunion', style: TextStyle(color: Colors.white)), onTap: () {
           _db.collection('meetings').doc(widget.meetingId).collection('kicked').doc(identity).set({'ts': FieldValue.serverTimestamp()});
+          Navigator.pop(ctx);
+        }),
+        ListTile(leading: const Icon(Icons.pin_drop_rounded, color: Colors.amber), title: const Text('Mettre en Spotlight', style: TextStyle(color: Colors.white)), onTap: () {
+          _db.collection('meetings').doc(widget.meetingId).update({'spotlightUserId': identity});
           Navigator.pop(ctx);
         }),
       ])));
@@ -883,10 +890,18 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
 
   Widget _buildVideoGrid() {
     if (_activeScreenSharer != null || _screenShareOn) return _buildScreenShareLayout();
+    
+    // Spotlight logic
+    if (_spotlightUserId != null) {
+      final spotlightParticipant = _remoteParticipants.firstWhere((p) => p.identity == _spotlightUserId, orElse: () => _remoteParticipants.first);
+      return Positioned.fill(child: _buildParticipantTile(spotlightParticipant));
+    }
+
     final local = _room?.localParticipant;
     final total = 1 + _remoteParticipants.length;
     if (total == 1 && local != null) return Positioned.fill(child: _buildParticipantTile(local, isLocal: true));
     if (total == 2 && local != null) return Stack(children: [Positioned.fill(child: _buildParticipantTile(_remoteParticipants.first)), Positioned(top: 80, right: 12, width: 100, height: 140, child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildParticipantTile(local, isLocal: true)))]);
+    
     final cap = AppConfig.livekitVisibleTileCap;
     final List<Participant> all = [if (local != null) local, ..._remoteParticipants];
     final start = _gridPage * cap; final end = (start + cap).clamp(0, all.length);
@@ -911,7 +926,16 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
 
   Widget _buildParticipantTile(Participant p, {bool isLocal = false}) {
     final screen = _screenShareTrack(p); final camera = _cameraTrack(p); final name = isLocal ? widget.userName : (p.name ?? p.identity);
-    Widget video = screen != null ? VideoTrackRenderer(screen) : (camera != null && (isLocal ? _camOn : true) ? ColorFiltered(colorFilter: isLocal ? _activeFilter : const ColorFilter.mode(Colors.transparent, BlendMode.multiply), child: VideoTrackRenderer(camera)) : _buildAvatar(name, seed: (isLocal ? widget.userId : p.identity).hashCode));
+    
+    // Data saver: only render video if data saver is off or it's the active speaker
+    final shouldRenderVideo = !_dataSaverOn || isLocal || p.isSpeaking;
+
+    Widget video = screen != null 
+      ? VideoTrackRenderer(screen) 
+      : (camera != null && (isLocal ? _camOn : true) && shouldRenderVideo
+          ? ColorFiltered(colorFilter: isLocal ? _activeFilter : const ColorFilter.mode(Colors.transparent, BlendMode.multiply), child: VideoTrackRenderer(camera)) 
+          : _buildAvatar(name, seed: (isLocal ? widget.userId : p.identity).hashCode));
+
     return ClipRRect(borderRadius: BorderRadius.circular(8), child: Stack(fit: StackFit.expand, children: [video, Positioned(bottom: 6, left: 6, child: _nameTag(name, isLocal: isLocal, isSharing: screen != null))]));
   }
 
