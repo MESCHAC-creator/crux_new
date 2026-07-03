@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -e
-
 mkdir -p build/outputs
 
 echo "=== FLUTTER CLEAN & PUB GET ==="
@@ -14,8 +13,6 @@ else
   echo "⚠️ assets/icon/icon.png introuvable — génération d'icônes ignorée"
 fi
 
-flutter pub run flutter_launcher_icons:main
-
 echo "=== FLUTTER BUILD APK (release) ==="
 flutter build apk --release --no-tree-shake-icons 2>&1 | tail -300
 
@@ -28,6 +25,7 @@ if [ -z "$APK" ]; then
   find build/app/outputs 2>/dev/null || echo "(empty)"
   exit 1
 fi
+
 cp "$APK" build/outputs/crux-release.apk
 echo "✅ APK: $(du -sh build/outputs/crux-release.apk | cut -f1) — source: $APK"
 
@@ -42,5 +40,6 @@ if [ -z "$AAB" ]; then
   find build/app/outputs 2>/dev/null || echo "(empty)"
   exit 1
 fi
+
 cp "$AAB" build/outputs/crux-release.aab
 echo "✅ AAB: $(du -sh build/outputs/crux-release.aab | cut -f1) — source: $AAB"
