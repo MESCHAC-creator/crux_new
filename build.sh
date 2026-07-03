@@ -8,6 +8,12 @@ flutter clean
 flutter pub get
 
 echo "=== GENERATE APP ICONS ==="
+if [ -f "assets/icon/icon.png" ]; then
+  flutter pub run flutter_launcher_icons
+else
+  echo "⚠️ assets/icon/icon.png introuvable — génération d'icônes ignorée"
+fi
+
 flutter pub run flutter_launcher_icons:main
 
 echo "=== FLUTTER BUILD APK (release) ==="
