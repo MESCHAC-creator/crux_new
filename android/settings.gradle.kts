@@ -21,21 +21,3 @@ plugins {
 }
 
 include(":app")
-
-// Manual plugin loading (fallback)
-val flutterProjectRoot = rootProject.projectDir.parentFile
-val pluginsFile = File(flutterProjectRoot, ".flutter-plugins")
-if (pluginsFile.exists()) {
-    pluginsFile.readLines().forEach { line ->
-        val parts = line.split("=")
-        if (parts.size == 2) {
-            val pluginName = parts[0]
-            val pluginPath = parts[1]
-            val pluginAndroidPath = File(pluginPath, "android")
-            if (pluginAndroidPath.exists()) {
-                include(":$pluginName")
-                project(":$pluginName").projectDir = pluginAndroidPath
-            }
-        }
-    }
-}

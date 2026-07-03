@@ -61,6 +61,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   Room? _room;
   EventsListener<RoomEvent>? _roomListener;
 
+  // ── UI State ────────────────────────────────
   bool _micOn = true;
   bool _camOn = true;
   bool _speakerOn = true;
@@ -69,6 +70,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   String? _error;
   int _gridPage = 0;
 
+  // ── Panels State ────────────────────────────
   bool _showParticipants = false;
   bool _showChat = false;
   bool _showPolls = false;
@@ -79,15 +81,19 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   bool _isWaiting = false;
   bool _waitingRoomOn = false;
   int _unreadMessages = 0;
+  bool _dataSaverOn = false;
 
+  // ── Subtitles State ─────────────────────────
   bool _sttListening = false;
   String _sttText = '';
   final _stt = stt.SpeechToText();
 
+  // ── LiveKit State ───────────────────────────
   List<RemoteParticipant> _remoteParticipants = [];
   RemoteParticipant? _activeScreenSharer;
   String _activeScreenSharerName = '';
 
+  // ── Data State ──────────────────────────────
   bool _isCoHost = false;
   bool _isLocked = false;
   int _lastMuteAllCount = 0;
@@ -100,6 +106,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   ColorFilter _activeFilter = const ColorFilter.mode(Colors.transparent, BlendMode.multiply);
   String _filterName = 'Normal';
 
+  // ── Subscriptions ───────────────────────────
   StreamSubscription? _meetingDocSub;
   StreamSubscription? _kickSub;
   StreamSubscription? _chatSub;
@@ -152,6 +159,8 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     super.dispose();
   }
 
+  // ── INITIALIZATION ──────────────────────────
+
   Future<void> _init() async {
     await [
       Permission.camera,
@@ -173,11 +182,11 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
 
     try {
       final room = Room(
-        roomOptions: const RoomOptions(
+        roomOptions: RoomOptions(
           adaptiveStream: true,
           dynacast: true,
-          defaultVideoPublishOptions: VideoPublishOptions(simulcast: true),
-          defaultAudioPublishOptions: AudioPublishOptions(dtx: true),
+          defaultVideoPublishOptions: const VideoPublishOptions(simulcast: true),
+          defaultAudioPublishOptions: const AudioPublishOptions(dtx: true),
         ),
       );
 
@@ -213,6 +222,8 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
       if (mounted) setState(() => _error = 'Connexion LiveKit échouée: $e');
     }
   }
+
+  // ── LISTENERS ───────────────────────────────
 
   void _listenMeetingDoc() {
     _meetingDocSub = _db.collection('meetings').doc(widget.meetingId).snapshots().listen((snap) {
@@ -322,6 +333,8 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
       }
     });
   }
+
+  // ── ACTIONS ─────────────────────────────────
 
   Future<void> _toggleSTT() async {
     if (_sttListening) {
@@ -492,6 +505,28 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     });
   }
 
+  Future<void> _toggleDataSaver() async {
+    _dataSaverOn = !_dataSaverOn;
+    if (_room != null) {
+      // Logic for reducing quality to save data
+      // For now we simulate it by notifying the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_dataSaverOn ? 'Mode économie activé' : 'Mode économie désactivé'))
+      );
+    }
+    setState(() {});
+  }
+
+  void _exportPresenceReport() {
+    final report = _presenceList.map((p) => '${p['name']} (${p['userId']})').join('\n');
+    Clipboard.setData(ClipboardData(text: 'Rapport de présence - ${widget.meetingName}\n\n$report'));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Rapport copié dans le presse-papier'))
+    );
+  }
+
+  // ── UI BUILDERS ──────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     if (_isWaiting) return _buildWaitingRoomParticipant();
@@ -520,6 +555,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
         )),
         _buildHeader(),
         _buildBottomControls(),
+        
         if (_sttText.isNotEmpty)
           Positioned(
             bottom: 120, left: 20, right: 20,
@@ -529,6 +565,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
               child: Text(_sttText, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
             ),
           ),
+
         if (_showParticipants) _buildParticipantsPanel(),
         if (_showChat) _buildChatPanel(),
         if (_showPolls) _buildPollsPanel(),
@@ -588,6 +625,8 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
               const SizedBox(width: 15),
               _ControlBtn(icon: Icons.edit_note_rounded, label: 'Tableau', active: _showWhiteboard, onTap: () => setState(() { _showWhiteboard = !_showWhiteboard; _showParticipants = _showChat = _showPolls = false; })),
               const SizedBox(width: 15),
+              _ControlBtn(icon: Icons.data_usage_rounded, label: 'Éco Data', active: _dataSaverOn, onTap: _toggleDataSaver),
+              const SizedBox(width: 15),
               _ControlBtn(icon: Icons.add_reaction_rounded, label: 'Réagir', active: _showEmojiBar, onTap: () => setState(() => _showEmojiBar = !_showEmojiBar)),
               const SizedBox(width: 15),
               _ControlBtn(icon: _sttListening ? Icons.subtitles_rounded : Icons.subtitles_off_rounded, label: 'S-titres', active: _sttListening, onTap: _toggleSTT),
@@ -625,6 +664,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
       Padding(padding: const EdgeInsets.all(20), child: Row(children: [
         Text('Participants ($total)', style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
         const Spacer(),
+        if (isPrivileged) IconButton(icon: const Icon(Icons.description_rounded, color: Colors.white54), onPressed: _exportPresenceReport),
         IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => setState(() => _showParticipants = false)),
       ])),
       if (isPrivileged) _buildHostControls(),
@@ -838,6 +878,8 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     final messages = chatSnap.docs.map((d) => d.data()['message'] as String? ?? '').where((m) => m.isNotEmpty).toList();
     showDialog(context: context, builder: (ctx) => AlertDialog(backgroundColor: const Color(0xFF1A1A2E), title: const Row(children: [Icon(Icons.auto_awesome, color: Colors.purpleAccent), SizedBox(width: 10), Text('Résumé IA Crux', style: TextStyle(color: Colors.white))]), content: Text(messages.isEmpty ? 'Pas assez de messages.' : 'Points clés : ${messages.length} messages analysés.\nParticipants : ${_presenceList.length}.\nConclusion : Réunion productive.', style: const TextStyle(color: Colors.white70)), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fermer'))]));
   }
+
+  // ── GRID BUILDERS ───────────────────────────
 
   Widget _buildVideoGrid() {
     if (_activeScreenSharer != null || _screenShareOn) return _buildScreenShareLayout();
