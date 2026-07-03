@@ -54,7 +54,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.9.0")
 
-    // Manual plugin dependency injection (fallback)
+    // Manual plugin dependency injection (fallback) - filtered for Android
     val flutterProjectRoot = rootProject.projectDir.parentFile
     val pluginsFile = File(flutterProjectRoot, ".flutter-plugins")
     if (pluginsFile.exists()) {
@@ -62,7 +62,10 @@ dependencies {
             val parts = line.split("=")
             if (parts.size == 2) {
                 val pluginName = parts[0]
-                implementation(project(":$pluginName"))
+                val pluginPath = parts[1]
+                if (File(pluginPath, "android").exists()) {
+                    implementation(project(":$pluginName"))
+                }
             }
         }
     }
