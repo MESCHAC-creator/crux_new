@@ -22,3 +22,17 @@ plugins {
 }
 
 include(":app")
+
+// Déclaration correcte des variables globales demandées par les dépendances (ex: app_links)
+// Elles doivent être attachées directement au rootProject
+rootProject.extra.set("compileSdkVersion", 35)
+rootProject.extra.set("minSdkVersion", 24)
+rootProject.extra.set("targetSdkVersion", 34)
+
+// Configuration globale pour tous les dépôts des projets
+gradle.lifecycle.beforeProject {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
