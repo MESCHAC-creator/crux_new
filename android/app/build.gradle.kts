@@ -5,13 +5,10 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-val rootCompileSdk = rootProject.extra.get("compileSdkVersion") as Int
-val rootMinSdk = rootProject.extra.get("minSdkVersion") as Int
-val rootTargetSdk = rootProject.extra.get("targetSdkVersion") as Int
-
 android {
     namespace = "com.example.crux"
-    compileSdk = rootCompileSdk
+    // Valeurs en dur pour éviter les erreurs de "rootProject.extra"
+    compileSdk = 35 
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -28,8 +25,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.crux"
-        minSdk = rootMinSdk
-        targetSdk = rootTargetSdk
+        minSdk = 24
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
         multiDexEnabled = true
