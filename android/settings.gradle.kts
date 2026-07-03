@@ -12,6 +12,7 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("dev.flutter.flutter-gradle-plugin") apply false
@@ -19,28 +20,5 @@ plugins {
     id("org.jetbrains.kotlin.android") version "1.9.22" apply false
     id("com.google.gms.google-services") version "4.4.2" apply false
 }
+
 include(":app")
-
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-// Ces propriétés seront lues par les plugins comme app_links
-subprojects {
-    project.extra.set("compileSdkVersion", 35)
-    project.extra.set("minSdkVersion", 21)
-    project.extra.set("targetSdkVersion", 34)
-}
-rootProject.layout.buildDirectory.set(rootProject.layout.projectDirectory.dir("../build"))
-subprojects {
-    project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
-}
-subprojects {
-    project.evaluationDependsOn(":app")
-}
-tasks.register<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
-}
