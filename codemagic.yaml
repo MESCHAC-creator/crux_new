@@ -15,16 +15,42 @@ workflows:
         - firebase_deploy
 
     scripts:
+      - name: Clean all caches and locks
+        script: |
+          set -e
+          echo "=== Removing all lock files and caches ===" 
+          rm -f pubspec.lock
+          rm -rf .dart_tool/
+          rm -rf build/
+          rm -rf android/.gradle/
+          rm -rf ~/.gradle/caches/
+          rm -rf ~/.gradle/daemon/
+          echo "✅ Caches cleaned"
+
       - name: Set up local.properties
         script: |
           FLUTTER_SDK=$(which flutter | xargs readlink -f | sed 's|/bin/flutter||')
           echo "flutter.sdk=$FLUTTER_SDK" > android/local.properties
           flutter --version
 
-      - name: Get Flutter packages
+      - name: Update Flutter and dependencies
         script: |
-          rm -f pubspec.lock
-          flutter pub get
+          set -e
+          flutter clean
+          flutter pub cache clean
+          flutter pub get --verbose
+          echo "✅ Flutter packages updated"
+
+      - name: Pre-compile plugin dependencies
+        script: |
+          set -e
+          echo "=== Pre-compiling plugin Android dependencies ==="
+          cd android
+          chmod +x gradlew
+          ./gradlew downloadDependencies || true
+          ./gradlew --refresh-dependencies || true
+          cd ..
+          echo "✅ Plugin dependencies pre-compiled"
 
       - name: Deploy Firestore rules (if FIREBASE_TOKEN is set)
         script: |
@@ -68,21 +94,32 @@ workflows:
                   print(f'No changes needed: {path}')
           PYEOF
 
+      - name: Patch GeneratedPluginRegistrant (add Log import)
+        script: |
+          set -e
+          REGISTRANT="android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java"
+          if [ -f "$REGISTRANT" ]; then
+            # Add missing Log import if not present
+            if ! grep -q "import android.util.Log;" "$REGISTRANT"; then
+              sed -i '1s/^/import android.util.Log;\n/' "$REGISTRANT"
+              echo "✅ Log import added to GeneratedPluginRegistrant"
+            fi
+          else
+            echo "⚠️  GeneratedPluginRegistrant.java not found yet (will be generated)"
+          fi
+
       - name: Install Gradle init script to fix afterEvaluate
         script: |
           mkdir -p ~/.gradle/init.d
           cat > ~/.gradle/init.d/flutter-ae-fix.gradle << 'INIT_EOF'
-          // Intercept project.afterEvaluate calls and handle already-evaluated projects
           gradle.beforeProject { project ->
               project.metaClass.afterEvaluate = { Closure action ->
                   def p = delegate
                   if (p.state.executed) {
-                      // Project already evaluated — run action immediately
                       action.delegate = p
                       action.resolveStrategy = Closure.DELEGATE_FIRST
                       action()
                   } else {
-                      // Call original Java implementation via reflection (bypasses metaclass recursion)
                       def javaClass = p.class
                       while (javaClass != null && javaClass != Object.class) {
                           try {
@@ -94,7 +131,6 @@ workflows:
                               javaClass = javaClass.superclass
                           }
                       }
-                      // Fallback: try Action-based variant
                       p.afterEvaluate(new org.gradle.api.Action<org.gradle.api.Project>() {
                           void execute(org.gradle.api.Project proj) { action.call() }
                       })
@@ -102,23 +138,22 @@ workflows:
               }
           }
           INIT_EOF
-          echo "✅ Gradle init script installed: ~/.gradle/init.d/flutter-ae-fix.gradle"
+          echo "✅ Gradle init script installed"
 
       - name: Prepare Gradle wrapper
         script: |
           set -e
-          # Linux CI requires executable bit; Windows/git checkouts often drop it.
           if [ -f android/gradlew ]; then
             chmod +x android/gradlew
           else
-            echo "❌ android/gradlew missing — commit Gradle wrapper files"
+            echo "❌ android/gradlew missing"
             exit 1
           fi
           if [ ! -f android/gradle/wrapper/gradle-wrapper.jar ]; then
             echo "❌ gradle-wrapper.jar missing"
             exit 1
           fi
-          echo "✅ Gradle wrapper ready ($(ls -la android/gradlew))"
+          echo "✅ Gradle wrapper ready"
 
       - name: Generate app icons
         script: dart run flutter_launcher_icons -f flutter_launcher_icons_android.yaml
@@ -129,33 +164,33 @@ workflows:
           mkdir -p build/outputs
 
           echo "=== FLUTTER BUILD APK (release) ==="
-          flutter build apk --release --no-tree-shake-icons 2>&1 | tail -300
+          flutter build apk --release --no-tree-shake-icons --verbose 2>&1 | tail -500
 
           APK=$(find build/app/outputs/flutter-apk -name "app-release.apk" 2>/dev/null | head -1)
           [ -z "$APK" ] && APK=$(find build/app/outputs/apk -name "app-release.apk" 2>/dev/null | head -1)
           [ -z "$APK" ] && APK=$(find . -name "app-release.apk" ! -path "*/.pub-cache/*" ! -path "*/debug/*" 2>/dev/null | head -1)
 
           if [ -z "$APK" ]; then
-            echo "❌ APK not found — listing build/app/outputs/:"
+            echo "❌ APK not found"
             find build/app/outputs 2>/dev/null || echo "(empty)"
             exit 1
           fi
           cp "$APK" build/outputs/crux-release.apk
-          echo "✅ APK: $(du -sh build/outputs/crux-release.apk | cut -f1) — source: $APK"
+          echo "✅ APK: $(du -sh build/outputs/crux-release.apk | cut -f1)"
 
           echo "=== FLUTTER BUILD AAB (release) ==="
-          flutter build appbundle --release --no-tree-shake-icons 2>&1 | tail -300
+          flutter build appbundle --release --no-tree-shake-icons --verbose 2>&1 | tail -500
 
           AAB=$(find build/app/outputs/bundle -name "app-release.aab" 2>/dev/null | head -1)
           [ -z "$AAB" ] && AAB=$(find . -name "app-release.aab" ! -path "*/.pub-cache/*" 2>/dev/null | head -1)
 
           if [ -z "$AAB" ]; then
-            echo "❌ AAB not found — listing build/app/outputs/:"
+            echo "❌ AAB not found"
             find build/app/outputs 2>/dev/null || echo "(empty)"
             exit 1
           fi
           cp "$AAB" build/outputs/crux-release.aab
-          echo "✅ AAB: $(du -sh build/outputs/crux-release.aab | cut -f1) — source: $AAB"
+          echo "✅ AAB: $(du -sh build/outputs/crux-release.aab | cut -f1)"
 
     artifacts:
       - build/outputs/crux-release.apk
@@ -192,6 +227,15 @@ workflows:
         - firebase_deploy
 
     scripts:
+      - name: Clean all caches
+        script: |
+          set -e
+          rm -f pubspec.lock
+          rm -rf .dart_tool/
+          rm -rf build/
+          flutter clean
+          echo "✅ Caches cleaned"
+
       - name: Generate iOS project files
         script: |
           set -e
@@ -214,7 +258,7 @@ workflows:
             echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/Runner/GoogleService-Info.plist
             echo "✅ GoogleService-Info.plist injecté"
           else
-            echo "⚠️  GOOGLE_SERVICE_INFO_PLIST absent — Firebase iOS désactivé"
+            echo "⚠️  GOOGLE_SERVICE_INFO_PLIST absent"
           fi
 
       - name: Patch Info.plist permissions
@@ -230,7 +274,7 @@ workflows:
           echo "✅ Info.plist patché"
 
       - name: Get Flutter packages
-        script: flutter pub get
+        script: flutter pub get --verbose
 
       - name: Deploy Firestore rules (if FIREBASE_TOKEN is set)
         script: |
@@ -240,9 +284,9 @@ workflows:
               --project crux-8aa85 \
               --token "$FIREBASE_TOKEN" \
               --non-interactive
-            echo "✅ Règles Firestore déployées"
+            echo "✅ Firestore rules deployed"
           else
-            echo "⏭️  FIREBASE_TOKEN absent — build OK"
+            echo "⏭️  FIREBASE_TOKEN absent"
           fi
 
       - name: Generate app icons
@@ -254,14 +298,14 @@ workflows:
           cd ios
           pod repo update
           pod install
-          echo "✅ CocoaPods installé"
+          echo "✅ CocoaPods installed"
 
       - name: Build iOS IPA
         script: |
           set -e
           flutter build ipa --release \
             --export-options-plist=/Users/builder/export_options.plist
-          echo "✅ IPA buildé"
+          echo "✅ IPA built"
 
     artifacts:
       - build/ios/ipa/*.ipa
