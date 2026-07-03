@@ -5,7 +5,6 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-// Récupération des propriétés du projet racine
 val rootCompileSdk = rootProject.extra.get("compileSdkVersion") as Int
 val rootMinSdk = rootProject.extra.get("minSdkVersion") as Int
 val rootTargetSdk = rootProject.extra.get("targetSdkVersion") as Int
