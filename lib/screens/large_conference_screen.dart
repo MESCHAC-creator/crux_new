@@ -163,25 +163,25 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   // ── INITIALIZATION ──────────────────────────
 
   Future<void> _init() async {
-    await [
-      Permission.camera,
-      Permission.microphone,
-      if (!kIsWeb && Platform.isAndroid) Permission.notification,
-    ].request();
-
-    final token = await LiveKitService.instance.fetchToken(
-      room: widget.meetingId,
-      identity: widget.userId,
-      name: widget.userName,
-      isHost: widget.isHost,
-    );
-
-    if (token == null) {
-      if (mounted) setState(() => _error = 'Impossible d\'obtenir un token LiveKit.');
-      return;
-    }
-
     try {
+      await [
+        Permission.camera,
+        Permission.microphone,
+        if (!kIsWeb && Platform.isAndroid) Permission.notification,
+      ].request();
+
+      final token = await LiveKitService.instance.fetchToken(
+        room: widget.meetingId,
+        identity: widget.userId,
+        name: widget.userName,
+        isHost: widget.isHost,
+      );
+
+      if (token == null) {
+        if (mounted) setState(() => _error = 'Impossible d\'obtenir un token LiveKit.');
+        return;
+      }
+
       final room = Room(
         roomOptions: const RoomOptions(
           adaptiveStream: true,
@@ -341,12 +341,12 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
 
   Future<void> _toggleSTT() async {
     if (_sttListening) {
-      _stt.stop();
-      setState(() { _sttListening = false; _sttText = ''; });
+      await _stt.stop();
+      if (mounted) setState(() { _sttListening = false; _sttText = ''; });
     } else {
       bool avail = await _stt.initialize();
       if (avail) {
-        setState(() => _sttListening = true);
+        if (mounted) setState(() => _sttListening = true);
         _stt.listen(onResult: (res) {
           if (mounted) {
             setState(() { _sttText = res.recognizedWords; });
@@ -472,7 +472,8 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
         .map((pub) => pub.track as LocalVideoTrack).firstOrNull;
     if (track == null) return;
     try {
-      final devices = await Hardware.instance.videoInputs();
+      // Correct API call for video inputs
+      final devices = await Hardware.instance.enumerateDevices(type: 'videoinput');
       if (devices.length < 2) return;
       final currentDeviceId = track.mediaStreamTrack.getSettings()['deviceId'];
       final nextDevice = devices.firstWhere((d) => d.deviceId != currentDeviceId, orElse: () => devices.first);
@@ -883,7 +884,9 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
   void _generateAISummary() async {
     final chatSnap = await _db.collection('meetings').doc(widget.meetingId).collection('chat').get();
     final messages = chatSnap.docs.map((d) => d.data()['message'] as String? ?? '').where((m) => m.isNotEmpty).toList();
-    showDialog(context: context, builder: (ctx) => AlertDialog(backgroundColor: const Color(0xFF1A1A2E), title: const Row(children: [Icon(Icons.auto_awesome, color: Colors.purpleAccent), SizedBox(width: 10), Text('Résumé IA Crux', style: TextStyle(color: Colors.white))]), content: Text(messages.isEmpty ? 'Pas assez de messages.' : 'Points clés : ${messages.length} messages analysés.\nParticipants : ${_presenceList.length}.\nConclusion : Réunion productive.', style: const TextStyle(color: Colors.white70)), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fermer'))]));
+    if (mounted) {
+      showDialog(context: context, builder: (ctx) => AlertDialog(backgroundColor: const Color(0xFF1A1A2E), title: const Row(children: [Icon(Icons.auto_awesome, color: Colors.purpleAccent), SizedBox(width: 10), Text('Résumé IA Crux', style: TextStyle(color: Colors.white))]), content: Text(messages.isEmpty ? 'Pas assez de messages.' : 'Points clés : ${messages.length} messages analysés.\nParticipants : ${_presenceList.length}.\nConclusion : Réunion productive.', style: const TextStyle(color: Colors.white70)), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fermer'))]));
+    }
   }
 
   // ── GRID BUILDERS ───────────────────────────
@@ -893,17 +896,17 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
     
     // Spotlight logic
     if (_spotlightUserId != null) {
-      final spotlightParticipant = _remoteParticipants.firstWhere((p) => p.identity == _spotlightUserId, orElse: () => _remoteParticipants.first);
-      return Positioned.fill(child: _buildParticipantTile(spotlightParticipant));
+      final p = [if (_room?.localParticipant != null) _room!.localParticipant!, ..._remoteParticipants].firstWhere((p) => p.identity == _spotlightUserId, orElse: () => _room!.localParticipant!);
+      return Positioned.fill(child: _buildParticipantTile(p as Participant, isLocal: p is LocalParticipant));
     }
 
     final local = _room?.localParticipant;
     final total = 1 + _remoteParticipants.length;
-    if (total == 1 && local != null) return Positioned.fill(child: _buildParticipantTile(local, isLocal: true));
-    if (total == 2 && local != null) return Stack(children: [Positioned.fill(child: _buildParticipantTile(_remoteParticipants.first)), Positioned(top: 80, right: 12, width: 100, height: 140, child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildParticipantTile(local, isLocal: true)))]);
+    if (total == 1 && local != null) return Positioned.fill(child: _buildParticipantTile(local as Participant, isLocal: true));
+    if (total == 2 && local != null) return Stack(children: [Positioned.fill(child: _buildParticipantTile(_remoteParticipants.first as Participant)), Positioned(top: 80, right: 12, width: 100, height: 140, child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildParticipantTile(local as Participant, isLocal: true)))]);
     
     final cap = AppConfig.livekitVisibleTileCap;
-    final List<Participant> all = [if (local != null) local, ..._remoteParticipants];
+    final List<Participant> all = [if (local != null) local as Participant, ..._remoteParticipants.map((e) => e as Participant)];
     final start = _gridPage * cap; final end = (start + cap).clamp(0, all.length);
     final pageItems = all.sublist(start, end);
     return Positioned.fill(
@@ -917,7 +920,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
         ), 
         itemCount: pageItems.length, 
         itemBuilder: (_, i) {
-          final p = pageItems[i];
+          final Participant p = pageItems[i];
           return _buildParticipantTile(p, isLocal: p is LocalParticipant);
         }
       )
@@ -926,16 +929,8 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
 
   Widget _buildParticipantTile(Participant p, {bool isLocal = false}) {
     final screen = _screenShareTrack(p); final camera = _cameraTrack(p); final name = isLocal ? widget.userName : (p.name ?? p.identity);
-    
-    // Data saver: only render video if data saver is off or it's the active speaker
     final shouldRenderVideo = !_dataSaverOn || isLocal || p.isSpeaking;
-
-    Widget video = screen != null 
-      ? VideoTrackRenderer(screen) 
-      : (camera != null && (isLocal ? _camOn : true) && shouldRenderVideo
-          ? ColorFiltered(colorFilter: isLocal ? _activeFilter : const ColorFilter.mode(Colors.transparent, BlendMode.multiply), child: VideoTrackRenderer(camera)) 
-          : _buildAvatar(name, seed: (isLocal ? widget.userId : p.identity).hashCode));
-
+    Widget video = screen != null ? VideoTrackRenderer(screen) : (camera != null && (isLocal ? _camOn : true) && shouldRenderVideo ? ColorFiltered(colorFilter: isLocal ? _activeFilter : const ColorFilter.mode(Colors.transparent, BlendMode.multiply), child: VideoTrackRenderer(camera)) : _buildAvatar(name, seed: (isLocal ? widget.userId : p.identity).hashCode));
     return ClipRRect(borderRadius: BorderRadius.circular(8), child: Stack(fit: StackFit.expand, children: [video, Positioned(bottom: 6, left: 6, child: _nameTag(name, isLocal: isLocal, isSharing: screen != null))]));
   }
 
@@ -945,7 +940,7 @@ class _LargeConferenceScreenState extends State<LargeConferenceScreen> {
 
   Widget _buildScreenShareLayout() {
     final sharer = _activeScreenSharer; final local = _room?.localParticipant; VideoTrack? main = _screenShareOn && local != null ? _screenShareTrack(local) : (sharer != null ? _screenShareTrack(sharer) : null);
-    return Stack(children: [Positioned.fill(child: main != null ? VideoTrackRenderer(main) : _buildAvatar(_activeScreenSharerName)), if (main != null) Positioned(top: 72, left: 12, right: 12, child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)), child: Row(children: [const Icon(Icons.screen_share, color: Colors.white, size: 16), const SizedBox(width: 8), Text(_screenShareOn ? 'Vous partagez votre écran' : '$_activeScreenSharerName partage son écran', style: const TextStyle(color: Colors.white, fontSize: 12))]))), if (local != null) Positioned(top: 120, right: 12, width: 100, height: 140, child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildParticipantTile(local, isLocal: true)))]);
+    return Stack(children: [Positioned.fill(child: main != null ? VideoTrackRenderer(main) : _buildAvatar(_activeScreenSharerName)), if (main != null) Positioned(top: 72, left: 12, right: 12, child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)), child: Row(children: [const Icon(Icons.screen_share, color: Colors.white, size: 16), const SizedBox(width: 8), Text(_screenShareOn ? 'Vous partagez votre écran' : '$_activeScreenSharerName partage son écran', style: const TextStyle(color: Colors.white, fontSize: 12))]))), if (local != null) Positioned(top: 120, right: 12, width: 100, height: 140, child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildParticipantTile(local as Participant, isLocal: true)))]);
   }
 
   Widget _buildAvatar(String name, {int seed = 0}) {
