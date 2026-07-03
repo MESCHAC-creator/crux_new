@@ -1,14 +1,14 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("dev.flutter.flutter-gradle-plugin")
+    id("dev.flutter.flutter-flutter-gradle-plugin")
     id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.example.crux"
-    // Valeurs en dur pour éviter les erreurs de "rootProject.extra"
-    compileSdk = 35 
+    // Mise à jour vers 36 comme exigé par androidx.core:core:1.18.0
+    compileSdk = 36 
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -51,7 +51,7 @@ flutter {
 
 dependencies {
     implementation("androidx.multidex:multidex:2.0.1")
-    implementation("androidx.core:core-ktx:1.10.1")
+    implementation("androidx.core:core-ktx:1.18.0") // Votre version mise à jour
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.9.0")
 }
