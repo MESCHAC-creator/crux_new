@@ -53,4 +53,12 @@ workflows:
           echo "✅ Plugin dependencies pre-compiled"
 
       - name: Deploy Firestore rules (if FIREBASE_TOKEN is set)
-        script:
+        script: |
+          set -e
+          if [ -n "$FIREBASE_TOKEN" ]; then
+            npm install -g firebase-tools --silent
+            firebase deploy --only firestore:rules --project crux-8aa85 --token "$FIREBASE_TOKEN" --non-interactive
+            echo "Firestore rules deployed"
+          else
+            echo "FIREBASE_TOKEN absent - build OK"
+          fi
