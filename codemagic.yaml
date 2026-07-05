@@ -17,14 +17,13 @@ workflows:
           rm -rf .dart_tool/ build/ android/.gradle/
           rm -rf ~/.gradle/caches/ ~/.gradle/daemon/
           flutter clean
-          echo "✅ Caches cleaned"
 
       - name: Setup
         script: |
           FLUTTER_SDK=$(which flutter | xargs readlink -f | sed 's|/bin/flutter||')
           echo "flutter.sdk=$FLUTTER_SDK" > android/local.properties
 
-      - name: Dependencies (retry)
+      - name: Dependencies
         script: |
           set +e
           for i in {1..5}; do
@@ -34,13 +33,12 @@ workflows:
           done
           exit 1
 
-      - name: Patch plugins
+      - name: Prepare Gradle
         script: |
           set +e
           cd android && chmod +x gradlew
           ./gradlew downloadDependencies --info 2>&1 | tail -20 || true
           cd ..
-          echo "✅ Ready"
 
       - name: Build APK
         script: |
@@ -94,7 +92,7 @@ workflows:
           rm -rf .dart_tool/ build/
           flutter clean
 
-      - name: Setup
+      - name: Setup CocoaPods
         script: |
           cd ios
           pod repo update
@@ -162,9 +160,11 @@ workflows:
           set -e
           flutter build web --release 2>&1 | tail -200
           [ -d "build/web" ] && [ -f "build/web/index.html" ] || exit 1
+          mkdir -p build/outputs
+          cp -r build/web build/outputs/
 
     artifacts:
-      - build/web/
+      - build/outputs/web/
 
     publishing:
       email:
