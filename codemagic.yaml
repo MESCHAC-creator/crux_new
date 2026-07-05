@@ -1,74 +1,46 @@
 workflows:
 
   android-release:
-    name: Android Release - CRUX (Java 21)
+    name: Android Release - CRUX
     instance_type: linux
     max_build_duration: 120
-
     environment:
-      flutter: 3.24.5
+      flutter: stable
       java: 21
       groups:
         - firebase_deploy
-
     scripts:
-      - name: Clean caches aggressively
+      - name: Clean caches
         script: |
           set -e
           rm -f pubspec.lock
           rm -rf .dart_tool/ build/ android/.gradle/
           rm -rf ~/.gradle/caches/ ~/.gradle/daemon/
-          rm -rf ~/.pub-cache/hosted/pub.dev ~/.pub-cache/git
           flutter clean
           echo "✅ Caches cleaned"
 
-      - name: Set local.properties
+      - name: Setup
         script: |
           FLUTTER_SDK=$(which flutter | xargs readlink -f | sed 's|/bin/flutter||')
           echo "flutter.sdk=$FLUTTER_SDK" > android/local.properties
 
-      - name: Get Flutter dependencies (robust)
+      - name: Dependencies (retry)
         script: |
           set +e
-          MAX_RETRIES=5
-          RETRY=0
-          while [ $RETRY -lt $MAX_RETRIES ]; do
-            RETRY=$((RETRY+1))
-            echo "━━━ Attempt $RETRY/$MAX_RETRIES ━━━"
+          for i in {1..5}; do
             flutter pub cache clean
-            if flutter pub get --verbose 2>&1 | tail -50; then
-              echo "✅ Dependencies fetched"
-              exit 0
-            fi
-            [ $RETRY -lt $MAX_RETRIES ] && sleep $((RETRY * 20))
+            flutter pub get && exit 0
+            sleep $((i * 20))
           done
           exit 1
 
-      - name: Patch plugins (optional)
-        script: |
-          set +e
-          for PKG in "device_info_plus-11.3.0:io.flutter.plugins.deviceinfo" \
-                     "package_info_plus-8.1.1:io.flutter.plugins.packageinfo" \
-                     "speech_to_text-6.6.0:com.csdcorp.speech_to_text" \
-                     "flutter_local_notifications-18.0.1:com.dexterous.flutterlocal"; do
-            IFS=':' read -r PKG_NAME NAMESPACE <<< "$PKG"
-            BUILD_FILE="$HOME/.pub-cache/hosted/pub.dev/$PKG_NAME/android/build.gradle"
-            [ -f "$BUILD_FILE" ] && ! grep -q "namespace" "$BUILD_FILE" && \
-              sed -i "/^android {/a\\    namespace = \"$NAMESPACE\"" "$BUILD_FILE" && echo "✅ Patched $PKG_NAME"
-          done
-          REGISTRANT="android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java"
-          [ -f "$REGISTRANT" ] && ! grep -q "import android.util.Log;" "$REGISTRANT" && \
-            sed -i '1i import android.util.Log;' "$REGISTRANT" && echo "✅ Log import"
-          echo "✅ Patch phase complete"
-
-      - name: Pre-compile dependencies
+      - name: Patch plugins
         script: |
           set +e
           cd android && chmod +x gradlew
           ./gradlew downloadDependencies --info 2>&1 | tail -20 || true
-          ./gradlew --refresh-dependencies 2>&1 | tail -20 || true
           cd ..
-          echo "✅ Gradle ready"
+          echo "✅ Ready"
 
       - name: Build APK
         script: |
@@ -76,22 +48,123 @@ workflows:
           mkdir -p build/outputs
           flutter build apk --release 2>&1 | tail -200
           APK=$(find . -name "app-release.apk" ! -path "*/.pub-cache/*" 2>/dev/null | head -1)
-          [ -z "$APK" ] && { echo "❌ APK not found"; exit 1; }
+          [ -z "$APK" ] && exit 1
           cp "$APK" build/outputs/crux-release.apk
-          echo "✅ APK: $(du -sh build/outputs/crux-release.apk | cut -f1)"
 
       - name: Build AAB
         script: |
           set -e
           flutter build appbundle --release 2>&1 | tail -200
           AAB=$(find . -name "app-release.aab" ! -path "*/.pub-cache/*" 2>/dev/null | head -1)
-          [ -z "$AAB" ] && { echo "❌ AAB not found"; exit 1; }
+          [ -z "$AAB" ] && exit 1
           cp "$AAB" build/outputs/crux-release.aab
-          echo "✅ AAB: $(du -sh build/outputs/crux-release.aab | cut -f1)"
 
     artifacts:
       - build/outputs/crux-release.apk
       - build/outputs/crux-release.aab
+
+    publishing:
+      email:
+        recipients:
+          - kouakouchristevann@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  ios-release:
+    name: iOS Release - CRUX
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.example.crux
+      groups:
+        - firebase_deploy
+    scripts:
+      - name: Clean caches
+        script: |
+          set -e
+          rm -f pubspec.lock
+          rm -rf .dart_tool/ build/
+          flutter clean
+
+      - name: Setup
+        script: |
+          cd ios
+          pod repo update
+          cd ..
+
+      - name: Dependencies
+        script: |
+          set +e
+          for i in {1..5}; do
+            flutter pub cache clean
+            flutter pub get && exit 0
+            sleep $((i * 20))
+          done
+          exit 1
+
+      - name: Build IPA
+        script: |
+          set -e
+          flutter build ipa --release 2>&1 | tail -200
+          IPA=$(find . -name "*.ipa" ! -path "*/.pub-cache/*" 2>/dev/null | head -1)
+          [ -z "$IPA" ] && exit 1
+          mkdir -p build/outputs
+          cp "$IPA" build/outputs/crux-release.ipa
+
+    artifacts:
+      - build/outputs/crux-release.ipa
+
+    publishing:
+      email:
+        recipients:
+          - kouakouchristevann@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+  web-release:
+    name: Web Release - CRUX
+    instance_type: linux
+    max_build_duration: 60
+    environment:
+      flutter: stable
+    scripts:
+      - name: Clean caches
+        script: |
+          set -e
+          rm -f pubspec.lock
+          rm -rf .dart_tool/ build/
+          flutter clean
+
+      - name: Dependencies
+        script: |
+          set +e
+          for i in {1..5}; do
+            flutter pub cache clean
+            flutter pub get && exit 0
+            sleep $((i * 20))
+          done
+          exit 1
+
+      - name: Build Web
+        script: |
+          set -e
+          flutter build web --release 2>&1 | tail -200
+          [ -d "build/web" ] && [ -f "build/web/index.html" ] || exit 1
+
+    artifacts:
+      - build/web/
 
     publishing:
       email:
