@@ -1,7 +1,6 @@
 workflows:
-
   android-release:
-    name: Android Release - CRUX
+    name: Android Release
     instance_type: linux
     max_build_duration: 120
     environment:
@@ -10,12 +9,10 @@ workflows:
       groups:
         - firebase_deploy
     scripts:
-      - name: Clean caches
+      - name: Clean
         script: |
-          set -e
           rm -f pubspec.lock
           rm -rf .dart_tool/ build/ android/.gradle/
-          rm -rf ~/.gradle/caches/ ~/.gradle/daemon/
           flutter clean
 
       - name: Setup
@@ -27,144 +24,25 @@ workflows:
         script: |
           set +e
           for i in {1..5}; do
-            flutter pub cache clean
             flutter pub get && exit 0
             sleep $((i * 20))
           done
           exit 1
 
-      - name: Prepare Gradle
-        script: |
-          set +e
-          cd android && chmod +x gradlew
-          ./gradlew downloadDependencies --info 2>&1 | tail -20 || true
-          cd ..
-
       - name: Build APK
         script: |
-          set -e
           mkdir -p build/outputs
-          flutter build apk --release 2>&1 | tail -200
-          APK=$(find . -name "app-release.apk" ! -path "*/.pub-cache/*" 2>/dev/null | head -1)
-          [ -z "$APK" ] && exit 1
-          cp "$APK" build/outputs/crux-release.apk
+          flutter build apk --release
+          cp $(find . -name "app-release.apk" ! -path "*/.pub-cache/*" | head -1) build/outputs/crux-release.apk
 
       - name: Build AAB
         script: |
-          set -e
-          flutter build appbundle --release 2>&1 | tail -200
-          AAB=$(find . -name "app-release.aab" ! -path "*/.pub-cache/*" 2>/dev/null | head -1)
-          [ -z "$AAB" ] && exit 1
-          cp "$AAB" build/outputs/crux-release.aab
+          flutter build appbundle --release
+          cp $(find . -name "app-release.aab" ! -path "*/.pub-cache/*" | head -1) build/outputs/crux-release.aab
 
     artifacts:
       - build/outputs/crux-release.apk
       - build/outputs/crux-release.aab
-
-    publishing:
-      email:
-        recipients:
-          - kouakouchristevann@gmail.com
-        notify:
-          success: true
-          failure: true
-
-  ios-release:
-    name: iOS Release - CRUX
-    instance_type: mac_mini_m2
-    max_build_duration: 120
-    integrations:
-      app_store_connect: codemagic
-    environment:
-      flutter: stable
-      xcode: latest
-      cocoapods: default
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.example.crux
-      groups:
-        - firebase_deploy
-    scripts:
-      - name: Clean caches
-        script: |
-          set -e
-          rm -f pubspec.lock
-          rm -rf .dart_tool/ build/
-          flutter clean
-
-      - name: Setup CocoaPods
-        script: |
-          cd ios
-          pod repo update
-          cd ..
-
-      - name: Dependencies
-        script: |
-          set +e
-          for i in {1..5}; do
-            flutter pub cache clean
-            flutter pub get && exit 0
-            sleep $((i * 20))
-          done
-          exit 1
-
-      - name: Build IPA
-        script: |
-          set -e
-          flutter build ipa --release 2>&1 | tail -200
-          IPA=$(find . -name "*.ipa" ! -path "*/.pub-cache/*" 2>/dev/null | head -1)
-          [ -z "$IPA" ] && exit 1
-          mkdir -p build/outputs
-          cp "$IPA" build/outputs/crux-release.ipa
-
-    artifacts:
-      - build/outputs/crux-release.ipa
-
-    publishing:
-      email:
-        recipients:
-          - kouakouchristevann@gmail.com
-        notify:
-          success: true
-          failure: true
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-
-  web-release:
-    name: Web Release - CRUX
-    instance_type: linux
-    max_build_duration: 60
-    environment:
-      flutter: stable
-    scripts:
-      - name: Clean caches
-        script: |
-          set -e
-          rm -f pubspec.lock
-          rm -rf .dart_tool/ build/
-          flutter clean
-
-      - name: Dependencies
-        script: |
-          set +e
-          for i in {1..5}; do
-            flutter pub cache clean
-            flutter pub get && exit 0
-            sleep $((i * 20))
-          done
-          exit 1
-
-      - name: Build Web
-        script: |
-          set -e
-          flutter build web --release 2>&1 | tail -200
-          [ -d "build/web" ] && [ -f "build/web/index.html" ] || exit 1
-          mkdir -p build/outputs
-          cp -r build/web build/outputs/
-
-    artifacts:
-      - build/outputs/web/
 
     publishing:
       email:
