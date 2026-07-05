@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  
   cupertino_icons: ^1.0.8
   http: ^1.2.2
   shared_preferences: ^2.2.3
@@ -20,25 +21,23 @@ dependencies:
   firebase_messaging: ^15.2.1
   provider: ^6.1.2
   logger: ^2.4.0
-  app_links: ^7.2.0 # Version robuste mise à jour
+  app_links: ^7.2.0
   google_sign_in: ^6.2.1
   speech_to_text: ^6.6.0
   url_launcher: ^6.2.6
-  share_plus: ^12.0.2
-  flutter_webrtc: ^0.12.1
+  share_plus: ^11.0.0
   permission_handler: ^11.3.1
   google_fonts: ^6.2.1
   image_picker: ^1.1.2
   path_provider: ^2.1.5
-  device_info_plus: ^11.2.1
+  device_info_plus: ^11.3.0
   package_info_plus: ^8.1.1
   livekit_client: ^2.3.0
   uuid: ^4.5.1
   flutter_local_notifications: ^18.0.1
   flutter_secure_storage: ^9.2.2
-  intl: ^0.20.2
-  flutter_animate: ^4.5.0
   timezone: ^0.9.4
+  flutter_animate: ^4.5.0
 
 dev_dependencies:
   flutter_test:
@@ -50,7 +49,7 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/icon/icon.png"
-  min_sdk_android: 24
+  min_sdk_android: 21
 
 flutter:
   uses-material-design: true
