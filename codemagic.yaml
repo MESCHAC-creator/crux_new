@@ -22,6 +22,11 @@ workflows:
 
       - name: Dependencies
         script: |
+          # Nettoyage spécifique du cache pour speech_to_text et cache global
+          rm -rf ~/.pub-cache/hosted/pub.dev/speech_to_text*
+          flutter pub cache clean --force
+          
+          # Tentative de récupération des dépendances
           set +e
           for i in {1..5}; do
             flutter pub get && exit 0
