@@ -8,7 +8,15 @@ plugins {
 android {
     namespace = "com.example.crux"
     compileSdk = 36
-    targetSdk = 36
+
+    defaultConfig {
+        applicationId = "com.example.crux"
+        minSdk = 21
+        targetSdk = 36
+        versionCode = 1
+        versionName = "1.0"
+        multiDexEnabled = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
@@ -18,11 +26,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "21"
-        freeCompilerArgs = listOf(
-            "-Xlint:-options",
-            "-Xlint:deprecation",
-            "-Xlint:unchecked"
-        )
     }
 
     sourceSets {
@@ -30,15 +33,6 @@ android {
             java.srcDirs("src/main/kotlin", "src/main/java")
             manifest.srcFile("src/main/AndroidManifest.xml")
         }
-    }
-
-    defaultConfig {
-        applicationId = "com.example.crux"
-        minSdk = 21
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
-        multiDexEnabled = true
     }
 
     buildTypes {
