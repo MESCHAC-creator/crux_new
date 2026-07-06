@@ -7,7 +7,8 @@ plugins {
 
 android {
     namespace = "com.example.crux"
-    compileSdk = 35
+    compileSdk = 36
+    targetSdk = 36
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
