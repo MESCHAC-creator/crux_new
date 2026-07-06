@@ -17,6 +17,11 @@ android {
 
     kotlinOptions {
         jvmTarget = "21"
+        freeCompilerArgs = listOf(
+            "-Xlint:-options",
+            "-Xlint:deprecation",
+            "-Xlint:unchecked"
+        )
     }
 
     sourceSets {
